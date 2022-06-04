@@ -1,0 +1,61 @@
+import random
+import pandas as pd
+from pathlib import Path
+from jenga.corruptions.generic import CategoricalShift
+
+
+class Corruptor:
+    """
+    Run Jenga to corrupt a dataset.
+    """
+
+    def __init__(self, dataset_name: str):
+        self.dataset_path = Path(dataset_name + ".csv")
+        self.export_root = Path(dataset_name)
+        self.samplings = ["MCAR", "MAR", "MNAR"]
+        self.fractions = [.1, .2, .3, .4, .5, .6, .7, .8, .9, .99]
+
+    def run(self):
+        df = pd.read_csv(self.dataset_path, sep=",")
+        df = df.astype(str)
+
+        for s in self.samplings:
+            for f in self.fractions:
+                for column in df.columns:
+                    df_dirty = df.copy()
+                    df_dirty[column] = CategoricalShift(
+                        column=column, fraction=f, sampling=s
+                    ).transform(df_dirty)[column]
+                export_path = self.export_root / Path(s)
+                export_path.mkdir(parents=True, exist_ok=True)
+                formatted_fraction = str(f).split(".")[1]
+                df_dirty.to_csv(
+                    export_path / f"dirty_{formatted_fraction}.csv", index=True
+                )
+        df.to_csv(self.export_root / "clean.csv", index=True)
+
+    def run_simple_mcar(self):
+        """ Jenga is buggy, so this is my stupidly MCAR implementation."""
+        df = pd.read_csv(self.dataset_path, sep=",")
+        df = df.astype(str)
+
+        for f in self.fractions:
+            df_dirty = df.copy()
+            n_rows, n_cols = df.shape
+            corruption_cells = []
+            target_corruptions = n_rows * n_cols * f
+
+            while len(corruption_cells) < target_corruptions:
+                x, y = random.randint(0, n_rows-1), random.randint(0, n_cols-1)
+                if (x, y) not in corruption_cells:
+                    corruption_cells.append((x, y))
+                    df_dirty.iloc[x, y] = 'ERRORABC123!?'
+
+            export_path = self.export_root / Path('MCAR/')
+            export_path.mkdir(parents=True, exist_ok=True)
+            formatted_fraction = str(f).split(".")[1]
+            df_dirty.to_csv(
+                export_path / f"dirty_{formatted_fraction}.csv", index=True
+            )
+
+        df.to_csv(self.export_root / "clean.csv", index=True)
