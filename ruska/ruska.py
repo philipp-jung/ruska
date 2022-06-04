@@ -1,4 +1,4 @@
-from helpers import estimate_time_to_finish
+from .helpers import estimate_time_to_finish
 from pathlib import Path
 from pprint import pprint
 import datetime

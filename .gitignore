@@ -5,8 +5,8 @@ dist/
 .idea
 
 label/
-datawig.egg-info
-datawig/__pycache__
+ruska.egg-info
+ruska/__pycache__
 test/__pycache__
 test/resources
 .cache
