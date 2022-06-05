@@ -42,12 +42,15 @@ class Corruptor:
         for f in self.fractions:
             df_dirty = df.copy()
             n_rows, n_cols = df.shape
-            target_corruptions = round(n_rows * n_cols * f)
-            xs = random.sample(range(n_rows), k=target_corruptions)
-            ys = random.sample(range(n_rows), k=target_corruptions)
 
-            for x, y in zip(xs, ys):
-                df_dirty.iloc[x, y] = "ERRORABC123!?"
+            target_corruptions = round(n_rows * n_cols * f)
+            error_cells = random.sample(
+                [(x, y) for x in range(n_rows) for y in range(n_cols)],
+                k=target_corruptions,
+            )
+
+            for x, y in error_cells:
+                df_dirty.iat[x, y] = "ERRORABC123!?"
 
             export_path = self.export_root / Path("MCAR/")
             export_path.mkdir(parents=True, exist_ok=True)
