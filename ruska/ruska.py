@@ -5,6 +5,7 @@ import datetime
 import itertools
 from pathlib import Path, PosixPath
 from typing import Dict, List, Callable
+from multiprocessing import Pool
 
 
 class Ruska:
@@ -67,18 +68,29 @@ class Ruska:
                 range_combinations[key_range] = combination[i]
             self.range_combinations.append(range_combinations)
 
-    def run(self, experiment: Callable):
+    def run(self, experiment: Callable, parallel=False):
         self._combine_ranges()
 
         results = []
+
+        # overwrite config with range when specified
+        configs = [
+            {**self.config, **range_config}
+            for range_config in self.range_combinations
+        ]
         self.times.append(datetime.datetime.now())
 
-        for parameter_combination in self.range_combinations:
-            config = {**self.config, **parameter_combination}
-            result = experiment(**config)
-            results.append({"result": result, "config": config})
+        if parallel:
+            pool = Pool()
+            results = pool.map(experiment, configs)
+            pool.close()
             self.times.append(datetime.datetime.now())
-            print(estimate_time_to_finish(self.times, len(self.range_combinations)))
+        else:
+            for config in configs:
+                result = experiment(config)
+                results.append(result)
+                self.times.append(datetime.datetime.now())
+                print(estimate_time_to_finish(self.times, len(self.range_combinations)))
 
         with open(self.save_path, "w") as f:
             print("Experiment using Ruska finished.", file=f)
@@ -124,6 +136,7 @@ class Ruska:
 
 if __name__ == "__main__":
     from time import sleep
+
     config = {"dataset": "letter", "strategy": "paint", "model": "dtc"}
     ranges = {"dataset": ["paper", "letter", "restaurant"]}
     ruska = Ruska(
@@ -135,4 +148,7 @@ if __name__ == "__main__":
         3,
         save_path="/Users/philipp/code/raha/raha",
     )
-    ruska.run(lambda **kwargs: sleep(1))
+    def fun(config):
+        sleep(1)
+        return {'result': None, 'config': config}
+    ruska.run(fun)

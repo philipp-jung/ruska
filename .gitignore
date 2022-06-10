@@ -5,7 +5,7 @@ dist/
 .idea
 
 label/
-ruska.egg-info
+ruska.egg-info/*
 ruska/__pycache__
 test/__pycache__
 test/resources

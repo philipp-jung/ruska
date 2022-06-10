@@ -6,6 +6,7 @@ ruska/__init__.py
 ruska/corruptor.py
 ruska/helpers.py
 ruska/inspector.py
+ruska/plotter.py
 ruska/ruska.py
 ruska.egg-info/PKG-INFO
 ruska.egg-info/SOURCES.txt

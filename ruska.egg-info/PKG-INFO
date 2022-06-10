@@ -7,29 +7,32 @@ Author: Philipp Jung
 Author-email: philippjung@posteo.de
 Maintainer-email: philippjung@posteo.de
 License: Apache License 2.0
-Description: # Ruska - Philipp's Phd Helper
-        Ruska contains a bundle of utilities used to carry out data cleaning
-        experiments.
-        
-        ## Installation
-        Clone the repository from git and set up virtualenv in the root dir of the package:
-        
-        ```
-        python3 -m venv venv
-        ```
-        
-        Install the package from local sources:
-        
-        ```
-        ./venv/bin/pip install -e .
-        ```
-        
-        ## Running Ruska
-        
-        ## Quickstart Example
-        
 Platform: UNKNOWN
 Classifier: License :: OSI Approved :: Apache Software License
 Classifier: Programming Language :: Python :: 3 :: Only
 Requires-Python: >=3
 Description-Content-Type: text/markdown
+License-File: LICENSE
+
+# Ruska - Philipp's Phd Helper
+Ruska contains a bundle of utilities used to carry out data cleaning
+experiments.
+
+## Installation
+Clone the repository from git and set up virtualenv in the root dir of the package:
+
+```
+python3 -m venv venv
+```
+
+Install the package from local sources:
+
+```
+./venv/bin/pip install -e .
+```
+
+## Running Ruska
+
+## Quickstart Example
+
+
