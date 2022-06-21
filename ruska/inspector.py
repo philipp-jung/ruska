@@ -60,11 +60,11 @@ class Inspector:
             row_start, row_end = pos - context_height, pos + context_height
             print(f"Evaluating error {i} from {len(self._cleaning_error_positions)}")
             print(f"Error in row {pos}:")
-            print(df_dirty.iloc[row_start:row_end, :].loc[:, context_selector])
+            print(df_dirty.iloc[row_start:row_end, :].iloc[:, context_selector])
             print(f"Cleaning result in row {pos}:")
-            print(df_pred.iloc[row_start:row_end, :].loc[:, context_selector])
+            print(df_pred.iloc[row_start:row_end, :].iloc[:, context_selector])
             print(f"Groud truth in row {pos}:")
-            print(df_clean.iloc[row_start:row_end, :].loc[:, context_selector])
+            print(df_clean.iloc[row_start:row_end, :].iloc[:, context_selector])
 
     def cleaning_performance(
         self, y_clean: pd.Series, y_pred: pd.Series, y_dirty: pd.Series
