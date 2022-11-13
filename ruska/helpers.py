@@ -1,7 +1,37 @@
+import json
 import datetime
 import numpy as np
 import pandas as pd
 from typing import List
+
+
+def reduce_runs_list(
+    result,
+    config_of_interest=['dataset', 'error_fraction'],
+    metrics = ['f1', 'precision', 'recall'],
+    run_label="run"
+):
+    """
+    Same as reduce_runs, but when the performance_label doesn't yield a single float, but a
+    list of floats instead.
+    """
+    labels_of_interest = config_of_interest + [run_label] + metrics
+    result_enc = [{**r['config'], **{m: json.dumps(r['result'][m]) for m in metrics}} for r in result]
+    df = pd.DataFrame(result_enc)  # use pandas' groupby implementation to make life easier
+    groups_label = [x for x in labels_of_interest if x not in metrics + [run_label]]
+    df_grouped = df.loc[:, labels_of_interest].groupby(groups_label).agg(list)
+    grouped_dict = df_grouped.reset_index().to_dict("records")
+
+    new_result = []
+
+    for r in grouped_dict:
+        d = {key: r[key] for key in groups_label}
+        d['n_runs'] = len(r[run_label])
+        for m in metrics:
+            metric_values = np.array([json.loads(f) for f in r[m]])
+            d[f'{m}_avg'] = np.ndarray.mean(metric_values, axis=0)
+        new_result.append(d)
+    return new_result
 
 
 def reduce_runs(

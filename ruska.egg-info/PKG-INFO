@@ -7,7 +7,6 @@ Author: Philipp Jung
 Author-email: philippjung@posteo.de
 Maintainer-email: philippjung@posteo.de
 License: Apache License 2.0
-Platform: UNKNOWN
 Classifier: License :: OSI Approved :: Apache Software License
 Classifier: Programming Language :: Python :: 3 :: Only
 Requires-Python: >=3
@@ -34,5 +33,3 @@ Install the package from local sources:
 ## Running Ruska
 
 ## Quickstart Example
-
-

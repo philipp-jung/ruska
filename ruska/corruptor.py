@@ -35,7 +35,7 @@ class Corruptor:
         df.to_csv(self.export_root / "clean.csv", index=True)
 
     def run_simple_mcar(self):
-        """Jenga is buggy, so this is my stupidly MCAR implementation."""
+        """Jenga is buggy, so this is my stupid MCAR implementation."""
         df = pd.read_csv(self.dataset_path, sep=",")
         df = df.astype(str)
 
