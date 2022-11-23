@@ -92,12 +92,13 @@ class Ruska:
                 self.times.append(datetime.datetime.now())
                 print(estimate_time_to_finish(self.times, len(self.range_combinations)))
 
+        config_store = {k, v for k, v in vars(self) if k != 'range_combinations'}
         with open(self.save_path, "w") as f:
             print("Experiment using Ruska finished.", file=f)
             print(f"Start time: {self.times[0]} -- End time: {self.times[-1]}", file=f)
             print("Ruska was configured as follows:", file=f)
             print("[BEGIN CONFIG]", file=f)
-            pprint(vars(self), f)
+            pprint(config_store, f)
             print("[END CONFIG]", file=f)
             print("Ruska measured the following results:", file=f)
             print("[BEGIN RESULTS]", file=f)
@@ -107,6 +108,9 @@ class Ruska:
 
     @staticmethod
     def load_result(path_to_result: str):
+        """
+        Loads a ruska result and returns a tuple result_dict, config_dict.
+        """
         path = Path(path_to_result)
         config_flag = False
         result_flag = False

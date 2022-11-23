@@ -1,6 +1,59 @@
+import math
 from .helpers import reduce_runs, get_distinct_list
 from matplotlib import pyplot as plt
 import numpy as np
+
+
+def prepare_result_v1(ruska_result: tuple):
+    """
+    Transform what is returned by Ruska.load_result() into a format that is
+    more handy to work with. I use it for plotting, but it's more handy in other
+    cases, too.
+    First used in 2022W46.
+    """
+    result, ruska_config = ruska_result
+    exp_config = ruska_config['config']
+    full_result = [{**x['config'], **x['result']} for x in result]
+    superfluous_config = [x for x in list(exp_config.keys()) if x not in ruska_config['ranges']]
+    formatted_result = [{k: v for k, v in x.items() if k not in superfluous_config} for x in full_result]
+    return formatted_result, ruska_config
+
+
+def plot_bars(formatted_result,
+                      ruska_config,
+                      parameter: str,
+                      run_label: str = 'run',
+                      score: str = 'f1',
+                      title=None):
+    """
+    Take prepared results from Ruska and plot them in a subplot. The subplot
+    contains as many plots as the result contains datasets. One parameter
+    can then be plotted on the x-axis,  while the y-axis displays one of the
+    three classification scores.
+    """
+    r = reduce_runs(formatted_result, run_label=run_label)
+    datasets = ruska_config['ranges']['dataset']
+    n_rows = math.ceil(len(datasets)/2)
+
+    fig, axs = plt.subplots(n_rows, 2, figsize=(17,17))
+    axs = np.ravel(axs)
+    rects = []
+    for i in range(len(axs)):
+        y = [round(x[f'{score}_avg'], 2) for x in r if x['dataset'] == datasets[i]]
+        x = [str(x[parameter]) for x in r if x['dataset'] == datasets[i]]
+        rect = axs[i].bar(x, y, color=f'C{i}')
+        rects.append(rect)
+        axs[i].set_title(datasets[i])
+
+    for i, ax in enumerate(axs.flat):
+        ax.set(xlabel=parameter, ylabel=f'{score}-Score Cleaning')
+        ax.bar_label(rects[i], padding=3)
+
+    if title is not None:
+        fig.suptitle(title, fontsize=16)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.92)
+    return fig
 
 
 def jenga_plot(*, ruska_result_pdep, ruska_result_naive, ruska_config):
