@@ -68,7 +68,7 @@ class Ruska:
                 range_combinations[key_range] = combination[i]
             self.range_combinations.append(range_combinations)
 
-    def run(self, experiment: Callable, parallel=False):
+    def run(self, experiment: Callable, parallel=False, workers=None):
         self._combine_ranges()
 
         results = []
@@ -92,7 +92,7 @@ class Ruska:
                 self.times.append(datetime.datetime.now())
                 print(estimate_time_to_finish(self.times, len(self.range_combinations)))
 
-        config_store = {k, v for k, v in vars(self) if k != 'range_combinations'}
+        config_store = {k: v for k, v in vars(self).items() if k != 'range_combinations'}
         with open(self.save_path, "w") as f:
             print("Experiment using Ruska finished.", file=f)
             print(f"Start time: {self.times[0]} -- End time: {self.times[-1]}", file=f)

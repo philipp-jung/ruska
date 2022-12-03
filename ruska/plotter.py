@@ -1,4 +1,6 @@
 import math
+import itertools
+import functools
 from .helpers import reduce_runs, get_distinct_list
 from matplotlib import pyplot as plt
 import numpy as np
@@ -20,11 +22,13 @@ def prepare_result_v1(ruska_result: tuple):
 
 
 def plot_bars(formatted_result,
-                      ruska_config,
-                      parameter: str,
-                      run_label: str = 'run',
-                      score: str = 'f1',
-                      title=None):
+              ruska_config,
+              parameter: str,
+              run_label: str = 'run',
+              score: str = 'f1',
+              title=None,
+              figsize=(10,10),
+              ax_keys=['dataset']):
     """
     Take prepared results from Ruska and plot them in a subplot. The subplot
     contains as many plots as the result contains datasets. One parameter
@@ -32,18 +36,23 @@ def plot_bars(formatted_result,
     three classification scores.
     """
     r = reduce_runs(formatted_result, run_label=run_label)
-    datasets = ruska_config['ranges']['dataset']
-    n_rows = math.ceil(len(datasets)/2)
+    dimension_ranges = [ruska_config['ranges'][k] for k in ax_keys]
+    dimensions = list(itertools.product(*dimension_ranges))
+    n_rows = math.ceil(len(dimensions)/2)
 
-    fig, axs = plt.subplots(n_rows, 2, figsize=(17,17))
+    fig, axs = plt.subplots(n_rows, 2, figsize=figsize)
     axs = np.ravel(axs)
     rects = []
-    for i in range(len(axs)):
-        y = [round(x[f'{score}_avg'], 2) for x in r if x['dataset'] == datasets[i]]
-        x = [str(x[parameter]) for x in r if x['dataset'] == datasets[i]]
+    for i, d in enumerate(dimensions):
+        def fltr(x):
+            check = [x[key] == str(v) for key, v in zip(ax_keys, d)]
+            return all(check)
+        subset = list(filter(fltr, r))
+        y = [round(x[f'{score}_avg'], 2) for x in subset]
+        x = [str(x[parameter]) for x in subset]
         rect = axs[i].bar(x, y, color=f'C{i}')
         rects.append(rect)
-        axs[i].set_title(datasets[i])
+        axs[i].set_title(''.join([f'{k}: {d} ' for k, d in zip(ax_keys, d)]))
 
     for i, ax in enumerate(axs.flat):
         ax.set(xlabel=parameter, ylabel=f'{score}-Score Cleaning')
