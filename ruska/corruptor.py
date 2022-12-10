@@ -2,6 +2,7 @@ import random
 import pandas as pd
 from pathlib import Path
 from jenga.corruptions.generic import CategoricalShift
+from ruska.helpers import simple_mcar
 
 
 class Corruptor:
@@ -35,23 +36,16 @@ class Corruptor:
         df.to_csv(self.export_root / "clean.csv", index=True)
 
     def run_simple_mcar(self):
-        """Jenga is buggy, so this is my stupid MCAR implementation."""
+        """
+        Jenga is buggy, so this is my stupid MCAR implementation. I used
+        this in 2022W22. It casts the entire DataFrame to string, and is thus
+        not applicable when working with the imputer feature generator.
+        """
         df = pd.read_csv(self.dataset_path, sep=",")
         df = df.astype(str)
 
         for f in self.fractions:
-            df_dirty = df.copy()
-            n_rows, n_cols = df.shape
-
-            target_corruptions = round(n_rows * n_cols * f)
-            error_cells = random.sample(
-                [(x, y) for x in range(n_rows) for y in range(n_cols)],
-                k=target_corruptions,
-            )
-
-            for x, y in error_cells:
-                df_dirty.iat[x, y] = "ERRORABC123!?"
-
+            df_dirty = simple_mcar(df, f, error_token='ERRORABC123!?')
             export_path = self.export_root / Path("MCAR/")
             export_path.mkdir(parents=True, exist_ok=True)
             formatted_fraction = str(f).split(".")[1]

@@ -81,7 +81,7 @@ class Ruska:
         self.times.append(datetime.datetime.now())
 
         if parallel:
-            pool = Pool()
+            pool = Pool(workers)
             results = pool.map(experiment, configs)
             pool.close()
             self.times.append(datetime.datetime.now())

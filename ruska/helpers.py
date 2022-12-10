@@ -1,4 +1,5 @@
 import json
+import random
 import datetime
 import numpy as np
 import pandas as pd
@@ -7,17 +8,22 @@ from typing import List
 
 def reduce_runs_list(
     result,
-    config_of_interest=['dataset', 'error_fraction'],
-    metrics = ['f1', 'precision', 'recall'],
-    run_label="run"
+    config_of_interest=["dataset", "error_fraction"],
+    metrics=["f1", "precision", "recall"],
+    run_label="run",
 ):
     """
     Same as reduce_runs, but when the performance_label doesn't yield a single float, but a
     list of floats instead.
     """
     labels_of_interest = config_of_interest + [run_label] + metrics
-    result_enc = [{**r['config'], **{m: json.dumps(r['result'][m]) for m in metrics}} for r in result]
-    df = pd.DataFrame(result_enc)  # use pandas' groupby implementation to make life easier
+    result_enc = [
+        {**r["config"], **{m: json.dumps(r["result"][m]) for m in metrics}}
+        for r in result
+    ]
+    df = pd.DataFrame(
+        result_enc
+    )  # use pandas' groupby implementation to make life easier
     groups_label = [x for x in labels_of_interest if x not in metrics + [run_label]]
     df_grouped = df.loc[:, labels_of_interest].groupby(groups_label).agg(list)
     grouped_dict = df_grouped.reset_index().to_dict("records")
@@ -26,10 +32,10 @@ def reduce_runs_list(
 
     for r in grouped_dict:
         d = {key: r[key] for key in groups_label}
-        d['n_runs'] = len(r[run_label])
+        d["n_runs"] = len(r[run_label])
         for m in metrics:
             metric_values = np.array([json.loads(f) for f in r[m]])
-            d[f'{m}_avg'] = np.ndarray.mean(metric_values, axis=0)
+            d[f"{m}_avg"] = np.ndarray.mean(metric_values, axis=0)
         new_result.append(d)
     return new_result
 
@@ -106,3 +112,50 @@ def estimate_time_to_finish(times: List[datetime.datetime], total_runs: int):
     fd = format_delta
     eta = avg * (total_runs - current_run)
     return f"Run {current_run}/{total_runs}. {fd(avg)} per run, estimate {fd(eta)} to finish."
+
+
+def simple_mcar(df: pd.DataFrame, fraction: float, error_token=None):
+    """
+    Randomly insert missing values into a dataframe. Note that specifying the
+    error_token as None preserves dtypes in the dataframe. If the error token
+    is a string or a number, make sure to cast the entire dataframe to a dtype
+    supporting categorical data with `df.astype(str)`. You will run into errors
+    otherwise.
+
+    Copies df, so that the clean dataframe you pass doesn't get corrupted
+    in place.
+
+    Note that casting to categorical data does mess up the imputer feature
+    generator.
+    """
+    df_dirty = df.copy()
+    n_rows, n_cols = df.shape
+
+    if fraction > 1:
+        raise ValueError("Cannot turn more than 100% of the values into errors.")
+    target_corruptions = round(n_rows * n_cols * fraction)
+    error_cells = random.sample(
+        [(x, y) for x in range(n_rows) for y in range(n_cols)],
+        k=target_corruptions,
+    )
+
+    for x, y in error_cells:
+        df_dirty.iat[x, y] = error_token
+
+    return df_dirty
+
+
+def simple_mcar_column(se: pd.Series, fraction: float, error_token=None):
+    """
+    Randomly insert missing values into a pandas Series. See docs on
+    simple_mcar for more information.
+
+    Does not copy the passed Series `se`, so the Series you pass gets corrupted
+    in-place and a variable assigned to it is returned.
+    """
+    n_rows = se.shape[0]
+    target_corruptions = round(n_rows * fraction)
+    error_positions = random.sample([x for x in range(n_rows)], k=target_corruptions)
+    for x in error_positions:
+        se.iat[x] = error_token
+    return se
