@@ -1,6 +1,9 @@
+import os
 import json
+import urllib.parse
 import random
 import datetime
+import requests
 import numpy as np
 import pandas as pd
 from typing import List
@@ -159,3 +162,16 @@ def simple_mcar_column(se: pd.Series, fraction: float, error_token=None):
     for x in error_positions:
         se.iat[x] = error_token
     return se
+
+
+def send_notification(message: str):
+    """
+    Send a notification using a telegram bot called @ruska_experiment_bot.
+    Secrets for this are stored locally in a .env file.
+    """
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+    url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={urllib.parse.quote(message)}"
+    _ = requests.get(url, timeout=10)
+    return True

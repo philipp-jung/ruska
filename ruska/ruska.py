@@ -1,11 +1,16 @@
-from .helpers import estimate_time_to_finish
-from pathlib import Path
-from pprint import pprint
 import datetime
 import itertools
-from pathlib import Path, PosixPath
-from typing import Dict, List, Callable
+from pathlib import Path
+from pprint import pprint
+from pathlib import Path
 from multiprocessing import Pool
+from typing import Dict, List, Callable
+
+from .helpers import estimate_time_to_finish, send_notification
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class Ruska:
@@ -80,6 +85,7 @@ class Ruska:
         ]
         self.times.append(datetime.datetime.now())
 
+        send_notification(f'I start an experiment called {self.name}.')
         if parallel:
             pool = Pool(workers)
             results = pool.map(experiment, configs)
@@ -105,6 +111,8 @@ class Ruska:
             pprint(results, f)
             print("[END RESULTS]", file=f)
         print("Measurement finished")
+        send_notification(f"Measurements of experiment {self.name} finished.\n"
+                f"Results are stored at {self.save_path}.")
 
     @staticmethod
     def load_result(path_to_result: str):
