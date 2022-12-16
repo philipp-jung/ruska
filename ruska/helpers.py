@@ -164,14 +164,13 @@ def simple_mcar_column(se: pd.Series, fraction: float, error_token=None):
     return se
 
 
-def send_notification(message: str):
+def send_notification(message: str, chat_id: str, token: str):
     """
     Send a notification using a telegram bot called @ruska_experiment_bot.
     Secrets for this are stored locally in a .env file.
     """
-    chat_id = os.getenv("TELEGRAM_CHAT_ID")
-    token = os.getenv("TELEGRAM_BOT_TOKEN")
-
+    if chat_id is None or token is None:
+        return True
     url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={urllib.parse.quote(message)}"
     _ = requests.get(url, timeout=10)
     return True

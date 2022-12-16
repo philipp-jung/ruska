@@ -4,13 +4,14 @@ from pathlib import Path
 from pprint import pprint
 from pathlib import Path
 from multiprocessing import Pool
-from typing import Dict, List, Callable
+from typing import Dict, List, Callable, Union
 
 from .helpers import estimate_time_to_finish, send_notification
 
-from dotenv import load_dotenv
+def test():
+    import os
+    print(os.environ['TEST'])
 
-load_dotenv()
 
 
 class Ruska:
@@ -36,6 +37,8 @@ class Ruska:
         ranges: Dict[str, list],
         runs: int,
         save_path: str,
+        chat_id: Union[None, str] = None,
+        token: Union[None, str] = None
     ):
         """Pass all parameters for raha as kwargs."""
         self.name = name
@@ -44,6 +47,8 @@ class Ruska:
         self.config = config
         self.ranges = {**ranges, "run": list(range(runs))}
         self.save_path = Path(save_path) / f"{name}.txt"
+        self.chat_id = chat_id
+        self.token = token
         self.times = []
 
         for range_key in ranges:
@@ -85,7 +90,7 @@ class Ruska:
         ]
         self.times.append(datetime.datetime.now())
 
-        send_notification(f'I start an experiment called {self.name}.')
+        send_notification(f'I start an experiment called {self.name}.', self.chat_id, self.token)
         if parallel:
             pool = Pool(workers)
             results = pool.map(experiment, configs)
