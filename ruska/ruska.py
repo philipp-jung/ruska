@@ -1,17 +1,12 @@
 import datetime
 import itertools
-from pathlib import Path
+from pathlib import Path, PosixPath
 from pprint import pprint
 from pathlib import Path
 from multiprocessing import Pool
 from typing import Dict, List, Callable, Union
 
-from .helpers import estimate_time_to_finish, send_notification
-
-def test():
-    import os
-    print(os.environ['TEST'])
-
+from helpers import estimate_time_to_finish, send_notification
 
 
 class Ruska:
@@ -38,7 +33,7 @@ class Ruska:
         runs: int,
         save_path: str,
         chat_id: Union[None, str] = None,
-        token: Union[None, str] = None
+        token: Union[None, str] = None,
     ):
         """Pass all parameters for raha as kwargs."""
         self.name = name
@@ -85,12 +80,13 @@ class Ruska:
 
         # overwrite config with range when specified
         configs = [
-            {**self.config, **range_config}
-            for range_config in self.range_combinations
+            {**self.config, **range_config} for range_config in self.range_combinations
         ]
         self.times.append(datetime.datetime.now())
 
-        send_notification(f'I start an experiment called {self.name}.', self.chat_id, self.token)
+        send_notification(
+            f"I start an experiment called {self.name}.", self.chat_id, self.token
+        )
         if parallel:
             pool = Pool(workers)
             results = pool.map(experiment, configs)
@@ -98,12 +94,17 @@ class Ruska:
             self.times.append(datetime.datetime.now())
         else:
             for config in configs:
-                result = experiment(config)
+                try:
+                    result = experiment(config)
+                except Exception as e:
+                    result = e
                 results.append(result)
                 self.times.append(datetime.datetime.now())
                 print(estimate_time_to_finish(self.times, len(self.range_combinations)))
 
-        config_store = {k: v for k, v in vars(self).items() if k != 'range_combinations'}
+        config_store = {
+            k: v for k, v in vars(self).items() if k != "range_combinations"
+        }
         with open(self.save_path, "w") as f:
             print("Experiment using Ruska finished.", file=f)
             print(f"Start time: {self.times[0]} -- End time: {self.times[-1]}", file=f)
@@ -116,8 +117,12 @@ class Ruska:
             pprint(results, f)
             print("[END RESULTS]", file=f)
         print("Measurement finished")
-        send_notification(f"Measurements of experiment {self.name} finished.\n"
-                f"Results are stored at {self.save_path}.")
+        send_notification(
+            f"Measurements of experiment {self.name} finished.\n"
+            f"Results are stored at {self.save_path}.",
+            self.chat_id,
+            self.token,
+        )
 
     @staticmethod
     def load_result(path_to_result: str):
@@ -165,7 +170,11 @@ if __name__ == "__main__":
         3,
         save_path="/Users/philipp/code/raha/raha",
     )
+
     def fun(config):
         sleep(1)
-        return {'result': None, 'config': config}
+        x = [0, 1, 2]
+        x[4]
+        return {"result": None, "config": config}
+
     ruska.run(fun)

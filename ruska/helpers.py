@@ -1,4 +1,3 @@
-import os
 import json
 import urllib.parse
 import random
@@ -6,7 +5,7 @@ import datetime
 import requests
 import numpy as np
 import pandas as pd
-from typing import List
+from typing import List, Union
 
 
 def reduce_runs_list(
@@ -164,7 +163,7 @@ def simple_mcar_column(se: pd.Series, fraction: float, error_token=None):
     return se
 
 
-def send_notification(message: str, chat_id: str, token: str):
+def send_notification(message: str, chat_id: Union[None, str], token: Union[None, str]):
     """
     Send a notification using a telegram bot called @ruska_experiment_bot.
     Secrets for this are stored locally in a .env file.

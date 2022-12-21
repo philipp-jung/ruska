@@ -39,8 +39,11 @@ def plot_bars(formatted_result,
     dimension_ranges = [ruska_config['ranges'][k] for k in ax_keys]
     dimensions = list(itertools.product(*dimension_ranges))
     n_rows = math.ceil(len(dimensions)/2)
+    n_cols = 2
+    if len(dimensions) == 1:
+        n_cols = 1
 
-    fig, axs = plt.subplots(n_rows, 2, figsize=figsize)
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize)
     axs = np.ravel(axs)
     rects = []
     for i, d in enumerate(dimensions):
@@ -54,9 +57,9 @@ def plot_bars(formatted_result,
         rects.append(rect)
         axs[i].set_title(''.join([f'{k}: {d} ' for k, d in zip(ax_keys, d)]))
 
-    for i, ax in enumerate(axs.flat):
-        ax.set(xlabel=parameter, ylabel=f'{score}-Score Cleaning')
-        ax.bar_label(rects[i], padding=3)
+    for i, rect in enumerate(rects):
+        axs[i].set(xlabel=parameter, ylabel=f'{score}-Score Cleaning')
+        axs[i].bar_label(rect, padding=3)
 
     if title is not None:
         fig.suptitle(title, fontsize=16)
