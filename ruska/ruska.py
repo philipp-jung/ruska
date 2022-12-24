@@ -1,3 +1,5 @@
+import os
+import logging
 import datetime
 import itertools
 from pathlib import Path, PosixPath
@@ -6,7 +8,7 @@ from pathlib import Path
 from multiprocessing import Pool
 from typing import Dict, List, Callable, Union
 
-from helpers import estimate_time_to_finish, send_notification
+from helpers import estimate_time_to_finish, send_notification, wrap_experiment
 
 
 class Ruska:
@@ -34,6 +36,7 @@ class Ruska:
         save_path: str,
         chat_id: Union[None, str] = None,
         token: Union[None, str] = None,
+        is_logging: bool = True
     ):
         """Pass all parameters for raha as kwargs."""
         self.name = name
@@ -51,6 +54,11 @@ class Ruska:
                 raise ValueError("Ranges müssen im Config dict enthalten sein.")
 
         self.range_combinations: List[dict] = []
+
+        if is_logging:
+            self.logging_path = os.path.splitext(self.save_path)[0] + '.log'
+            logging.basicConfig(filename=self.logging_path, level=logging.DEBUG)
+            logging.info(f'Writing logs to {self.logging_path}.')
 
     @property
     def start_time(self):
@@ -75,13 +83,14 @@ class Ruska:
 
     def run(self, experiment: Callable, parallel=False, workers=None):
         self._combine_ranges()
-
         results = []
 
+        wrapped_experiment = wrap_experiment(experiment)
         # overwrite config with range when specified
         configs = [
             {**self.config, **range_config} for range_config in self.range_combinations
         ]
+
         self.times.append(datetime.datetime.now())
 
         send_notification(
@@ -89,13 +98,13 @@ class Ruska:
         )
         if parallel:
             pool = Pool(workers)
-            results = pool.map(experiment, configs)
+            results = pool.map(wrapped_experiment, configs)
             pool.close()
             self.times.append(datetime.datetime.now())
         else:
             for config in configs:
                 try:
-                    result = experiment(config)
+                    result = wrapped_experiment(config)
                 except Exception as e:
                     result = e
                 results.append(result)
@@ -103,7 +112,7 @@ class Ruska:
                 print(estimate_time_to_finish(self.times, len(self.range_combinations)))
 
         config_store = {
-            k: v for k, v in vars(self).items() if k != "range_combinations"
+            k: v for k, v in vars(self).items() if k not in ["range_combinations", "token", "chat_id"]
         }
         with open(self.save_path, "w") as f:
             print("Experiment using Ruska finished.", file=f)
@@ -168,7 +177,7 @@ if __name__ == "__main__":
         config,
         ranges,
         3,
-        save_path="/Users/philipp/code/raha/raha",
+        save_path="/Users/philipp/code/ruska/",
     )
 
     def fun(config):
