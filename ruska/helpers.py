@@ -1,11 +1,12 @@
 import json
+import logging
 import urllib.parse
 import random
 import datetime
 import requests
 import numpy as np
 import pandas as pd
-from typing import List, Union
+from typing import List, Union, Callable
 
 
 def reduce_runs_list(
@@ -173,3 +174,10 @@ def send_notification(message: str, chat_id: Union[None, str], token: Union[None
     url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={urllib.parse.quote(message)}"
     _ = requests.get(url, timeout=10)
     return True
+
+def wrap_experiment(experiment: Callable):
+    def wrapped(config: dict):
+        logger = logging.getLogger(__name__)
+        logger.info(f'Starting experiment with following config:\n {config}')
+        experiment(config)
+    return wrapped
