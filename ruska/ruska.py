@@ -8,7 +8,7 @@ from pathlib import Path
 from multiprocessing import Pool
 from typing import Dict, List, Callable, Union
 
-from helpers import estimate_time_to_finish, send_notification, wrap_experiment
+from ruska.helpers import estimate_time_to_finish, send_notification, wrap_experiment
 
 
 class Ruska:
