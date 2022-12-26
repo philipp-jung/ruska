@@ -1,14 +1,15 @@
 import os
+import json
 import logging
 import datetime
 import itertools
 from pathlib import Path, PosixPath
 from pprint import pprint
 from pathlib import Path
-from multiprocessing import Pool
+from joblib import Parallel, delayed
 from typing import Dict, List, Callable, Union
 
-from ruska.helpers import estimate_time_to_finish, send_notification, wrap_experiment
+from ruska.helpers import send_notification, wrap_experiment
 
 
 class Ruska:
@@ -36,7 +37,7 @@ class Ruska:
         save_path: str,
         chat_id: Union[None, str] = None,
         token: Union[None, str] = None,
-        is_logging: bool = True
+        is_logging: bool = True,
     ):
         """Pass all parameters for raha as kwargs."""
         self.name = name
@@ -56,9 +57,20 @@ class Ruska:
         self.range_combinations: List[dict] = []
 
         if is_logging:
-            self.logging_path = os.path.splitext(self.save_path)[0] + '.log'
-            logging.basicConfig(filename=self.logging_path, level=logging.DEBUG)
-            logging.info(f'Writing logs to {self.logging_path}.')
+            self.logging_path = os.path.splitext(self.save_path)[0] + ".log"
+            logger = logging.getLogger()
+            fh = logging.FileHandler(self.logging_path, mode="a")
+            # create console handler with a higher log level
+            ch = logging.StreamHandler()
+            ch.setLevel(logging.ERROR)
+            # create formatter and add it to the handlers
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
+            fh.setFormatter(formatter)
+            ch.setFormatter(formatter)
+            logging.basicConfig(level=logging.DEBUG, handlers=[fh, ch])
+            logger.info(f"Writing logs to {self.logging_path}.")
 
     @property
     def start_time(self):
@@ -81,7 +93,7 @@ class Ruska:
                 range_combinations[key_range] = combination[i]
             self.range_combinations.append(range_combinations)
 
-    def run(self, experiment: Callable, parallel=False, workers=None):
+    def run(self, experiment: Callable, parallel=False, workers=-1):
         self._combine_ranges()
         results = []
 
@@ -90,31 +102,30 @@ class Ruska:
         configs = [
             {**self.config, **range_config} for range_config in self.range_combinations
         ]
-        logging.debug(f'Generated configs \n {configs}')
+        logger = logging.getLogger()
+        logger.debug(f"Generated configs \n {json.dumps(configs, indent=2)}")
 
         self.times.append(datetime.datetime.now())
 
         send_notification(
             f"I start an experiment called {self.name}.", self.chat_id, self.token
         )
-        if parallel:
-            pool = Pool(workers)
-            results = pool.map(wrapped_experiment, configs)
-            pool.close()
-            self.times.append(datetime.datetime.now())
-        else:
-            for config in configs:
-                try:
-                    result = wrapped_experiment(config)
-                except Exception as e:
-                    result = e
-                results.append(result)
-                self.times.append(datetime.datetime.now())
-                print(estimate_time_to_finish(self.times, len(self.range_combinations)))
+
+        if not parallel:
+            workers = 1
+        p = Parallel(n_jobs=workers, backend="loky", prefer="processes", verbose=10)
+        results = p(
+            delayed(wrapped_experiment)(i, self.logging_path, config)
+            for i, config in enumerate(configs)
+        )
+        self.times.append(datetime.datetime.now())
 
         config_store = {
-            k: v for k, v in vars(self).items() if k not in ["range_combinations", "token", "chat_id"]
+            k: v
+            for k, v in vars(self).items()
+            if k not in ["range_combinations", "token", "chat_id"]
         }
+
         with open(self.save_path, "w") as f:
             print("Experiment using Ruska finished.", file=f)
             print(f"Start time: {self.times[0]} -- End time: {self.times[-1]}", file=f)
@@ -164,27 +175,3 @@ class Ruska:
         result_dict = eval(result)  # this is where PosixPath is used
         result_config_dict = eval(result_config)
         return result_dict, result_config_dict
-
-
-if __name__ == "__main__":
-    from time import sleep
-
-    config = {"dataset": "letter", "strategy": "paint", "model": "dtc"}
-    ranges = {"dataset": ["paper", "letter", "restaurant"]}
-    ruska = Ruska(
-        "test",
-        "Eine Test-Messung, die ich ausführe, um zu testen.",
-        "f12fadsdfads",
-        config,
-        ranges,
-        3,
-        save_path="/Users/philipp/code/ruska/",
-    )
-
-    def fun(config):
-        sleep(1)
-        x = [0, 1, 2]
-        x[4]
-        return {"result": None, "config": config}
-
-    ruska.run(fun)

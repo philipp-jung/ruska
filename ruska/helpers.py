@@ -7,6 +7,7 @@ import requests
 import numpy as np
 import pandas as pd
 from typing import List, Union, Callable
+from pathlib import Path
 
 
 def reduce_runs_list(
@@ -102,21 +103,6 @@ def format_delta(delta: datetime.timedelta):
     return h + m + s
 
 
-def estimate_time_to_finish(times: List[datetime.datetime], total_runs: int):
-    deltas = []
-    i = 1
-
-    while i < len(times):
-        deltas.append(times[i] - times[i - 1])
-        i += 1
-
-    avg = sum(deltas, datetime.timedelta()) / len(deltas)
-    current_run = len(times) - 1
-    fd = format_delta
-    eta = avg * (total_runs - current_run)
-    return f"Run {current_run}/{total_runs}. {fd(avg)} per run, estimate {fd(eta)} to finish."
-
-
 def simple_mcar(df: pd.DataFrame, fraction: float, error_token=None):
     """
     Randomly insert missing values into a dataframe. Note that specifying the
@@ -175,9 +161,25 @@ def send_notification(message: str, chat_id: Union[None, str], token: Union[None
     _ = requests.get(url, timeout=10)
     return True
 
+
 def wrap_experiment(experiment: Callable):
-    def wrapped(config: dict):
-        logger = logging.getLogger(__name__)
-        logger.info(f'Starting experiment with following config:\n {config}')
+    def wrapped(i: int, logging_path: str, config: dict):
+        logger = logging.getLogger(f"worker_{i}")
+        fh = logging.FileHandler(logging_path, mode="a")
+        # logger.addHandler(fh)
+        # create console handler with a higher log level
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.ERROR)
+        # create formatter and add it to the handlers
+        formatter = logging.Formatter(
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        )
+        fh.setFormatter(formatter)
+        ch.setFormatter(formatter)
+        # logger.addHandler(ch)
+        logging.basicConfig(level=logging.DEBUG, handlers=[fh, ch])
+        logger.info(f"Starting experiment {i} with following config: {config}")
         experiment(config)
+        logger.info(f"Experiment {i} finished.")
+
     return wrapped
