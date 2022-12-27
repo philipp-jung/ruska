@@ -163,21 +163,8 @@ def send_notification(message: str, chat_id: Union[None, str], token: Union[None
 
 
 def wrap_experiment(experiment: Callable):
-    def wrapped(i: int, logging_path: str, config: dict):
-        logger = logging.getLogger(f"worker_{i}")
-        fh = logging.FileHandler(logging_path, mode="a")
-        # logger.addHandler(fh)
-        # create console handler with a higher log level
-        ch = logging.StreamHandler()
-        ch.setLevel(logging.ERROR)
-        # create formatter and add it to the handlers
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-        fh.setFormatter(formatter)
-        ch.setFormatter(formatter)
-        # logger.addHandler(ch)
-        logging.basicConfig(level=logging.DEBUG, handlers=[fh, ch])
+    def wrapped(i: int, config: dict):
+        logger = logging.getLogger("ruska")
         logger.info(f"Starting experiment {i} with following config: {config}")
         result = experiment(config)
         logger.info(f"Experiment {i} finished.")

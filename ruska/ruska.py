@@ -58,18 +58,7 @@ class Ruska:
 
         if is_logging:
             self.logging_path = os.path.splitext(self.save_path)[0] + ".log"
-            logger = logging.getLogger()
-            fh = logging.FileHandler(self.logging_path, mode="a")
-            # create console handler with a higher log level
-            ch = logging.StreamHandler()
-            ch.setLevel(logging.ERROR)
-            # create formatter and add it to the handlers
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-            fh.setFormatter(formatter)
-            ch.setFormatter(formatter)
-            logging.basicConfig(level=logging.DEBUG, handlers=[fh, ch])
+            logger = logging.getLogger("ruska")
             logger.info(f"Writing logs to {self.logging_path}.")
 
     @property
@@ -101,7 +90,7 @@ class Ruska:
         configs = [
             {**self.config, **range_config} for range_config in self.range_combinations
         ]
-        logger = logging.getLogger()
+        logger = logging.getLogger("ruska")
         logger.debug(f"Generated configs \n {json.dumps(configs, indent=2)}")
 
         self.times.append(datetime.datetime.now())
@@ -116,7 +105,7 @@ class Ruska:
             n_jobs=workers, backend="loky", prefer="processes", verbose=10
         ) as p:
             results = p(
-                delayed(wrapped_experiment)(i, self.logging_path, config)
+                delayed(wrapped_experiment)(i, config)
                 for i, config in enumerate(configs)
             )
         self.times.append(datetime.datetime.now())
