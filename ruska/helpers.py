@@ -179,7 +179,8 @@ def wrap_experiment(experiment: Callable):
         # logger.addHandler(ch)
         logging.basicConfig(level=logging.DEBUG, handlers=[fh, ch])
         logger.info(f"Starting experiment {i} with following config: {config}")
-        experiment(config)
+        result = experiment(config)
         logger.info(f"Experiment {i} finished.")
+        return result
 
     return wrapped

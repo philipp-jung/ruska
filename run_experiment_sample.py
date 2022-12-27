@@ -19,6 +19,6 @@ if __name__ == "__main__":
     def fun(config):
         t = random.randint(0,3)
         sleep(t)
-        return {"result": None, "config": config}
+        return {"result": t, "config": config}
 
     ruska.run(fun, parallel=True)

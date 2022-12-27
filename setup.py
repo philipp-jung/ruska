@@ -11,7 +11,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="ruska",
-    version="0.0.1",
+    version="0.1.0",
     author="Philipp Jung",
     author_email="philippjung@posteo.de",
     maintainer_email='philippjung@posteo.de',

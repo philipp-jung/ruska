@@ -95,7 +95,6 @@ class Ruska:
 
     def run(self, experiment: Callable, parallel=False, workers=-1):
         self._combine_ranges()
-        results = []
 
         wrapped_experiment = wrap_experiment(experiment)
         # overwrite config with range when specified
@@ -113,11 +112,13 @@ class Ruska:
 
         if not parallel:
             workers = 1
-        p = Parallel(n_jobs=workers, backend="loky", prefer="processes", verbose=10)
-        results = p(
-            delayed(wrapped_experiment)(i, self.logging_path, config)
-            for i, config in enumerate(configs)
-        )
+        with Parallel(
+            n_jobs=workers, backend="loky", prefer="processes", verbose=10
+        ) as p:
+            results = p(
+                delayed(wrapped_experiment)(i, self.logging_path, config)
+                for i, config in enumerate(configs)
+            )
         self.times.append(datetime.datetime.now())
 
         config_store = {
