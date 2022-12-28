@@ -3,13 +3,13 @@ import json
 import logging
 import datetime
 import itertools
+from multiprocessing import Pool
 from pathlib import Path, PosixPath
 from pprint import pprint
 from pathlib import Path
-from joblib import Parallel, delayed
 from typing import Dict, List, Callable, Union
 
-from ruska.helpers import send_notification, wrap_experiment
+from ruska.helpers import send_notification, estimate_time_to_finish
 
 
 class Ruska:
@@ -82,33 +82,39 @@ class Ruska:
                 range_combinations[key_range] = combination[i]
             self.range_combinations.append(range_combinations)
 
-    def run(self, experiment: Callable, parallel=False, workers=-1):
+    def run(self, experiment: Callable, parallel=False, workers=None):
         self._combine_ranges()
 
-        wrapped_experiment = wrap_experiment(experiment)
         # overwrite config with range when specified
         configs = [
             {**self.config, **range_config} for range_config in self.range_combinations
         ]
-        logger = logging.getLogger("ruska")
-        logger.debug(f"Generated configs \n {json.dumps(configs, indent=2)}")
+        logger = logging.getLogger(__name__)
+        logger.debug(f'Generated configs \n {json.dumps(configs, indent=2)}')
 
         self.times.append(datetime.datetime.now())
 
         send_notification(
-            f"I start an experiment called {self.name}.", self.chat_id, self.token
+            f"Ruska starts an experiment called {self.name}.", self.chat_id, self.token
         )
 
-        if not parallel:
-            workers = 1
-        with Parallel(
-            n_jobs=workers, backend="loky", prefer="processes", verbose=10
-        ) as p:
-            results = p(
-                delayed(wrapped_experiment)(i, config)
-                for i, config in enumerate(configs)
-            )
-        self.times.append(datetime.datetime.now())
+        results = []
+        if parallel:
+            pool = Pool(workers)
+            results = pool.starmap(experiment, enumerate(configs))
+            pool.close()
+            self.times.append(datetime.datetime.now())
+        else:
+            for i, config in enumerate(configs):
+                try:
+                    result = experiment(i, config)
+                except Exception as e:
+                    result = e
+                results.append(result)
+                self.times.append(datetime.datetime.now())
+                print(estimate_time_to_finish(self.times, len(self.range_combinations)))
+
+        logger.info(f'Finished {len(configs)} measurements.')
 
         config_store = {
             k: v
@@ -134,6 +140,7 @@ class Ruska:
             self.chat_id,
             self.token,
         )
+        logger.info(f'Wrote results to {self.save_path}. Stopping.')
 
     @staticmethod
     def load_result(path_to_result: str):

@@ -150,24 +150,31 @@ def simple_mcar_column(se: pd.Series, fraction: float, error_token=None):
     return se
 
 
+def estimate_time_to_finish(times: List[datetime.datetime], total_runs: int):
+    deltas = []
+    i = 1
+
+    while i < len(times):
+        deltas.append(times[i] - times[i - 1])
+        i += 1
+
+    avg = sum(deltas, datetime.timedelta()) / len(deltas)
+    current_run = len(times) - 1
+    fd = format_delta
+    eta = avg * (total_runs - current_run)
+    return f"Run {current_run}/{total_runs}. {fd(avg)} per run, estimate {fd(eta)} to finish."
+
+
 def send_notification(message: str, chat_id: Union[None, str], token: Union[None, str]):
     """
     Send a notification using a telegram bot called @ruska_experiment_bot.
     Secrets for this are stored locally in a .env file.
     """
+    logger = logging.getLogger(__name__)
+    logger.info(message)
     if chat_id is None or token is None:
         return True
     url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={urllib.parse.quote(message)}"
     _ = requests.get(url, timeout=10)
     return True
 
-
-def wrap_experiment(experiment: Callable):
-    def wrapped(i: int, config: dict):
-        logger = logging.getLogger("ruska")
-        logger.info(f"Starting experiment {i} with following config: {config}")
-        result = experiment(config)
-        logger.info(f"Experiment {i} finished.")
-        return result
-
-    return wrapped
