@@ -169,15 +169,11 @@ def send_notification(message: str, chat_id: Union[None, str], token: Union[None
     Send a notification using a telegram bot called @ruska_experiment_bot.
     Secrets for this are stored locally in a .env file.
     """
+    logger = logging.getLogger(__name__)
+    logger.info(message)
     if chat_id is None or token is None:
         return True
     url = f"https://api.telegram.org/bot{token}/sendMessage?chat_id={chat_id}&text={urllib.parse.quote(message)}"
     _ = requests.get(url, timeout=10)
     return True
 
-def wrap_experiment(experiment: Callable):
-    def wrapped(config: dict):
-        logger = logging.getLogger(__name__)
-        logger.info(f'Starting experiment with following config:\n {config}')
-        experiment(config)
-    return wrapped

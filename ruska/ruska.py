@@ -8,7 +8,7 @@ from pathlib import Path
 from multiprocessing import Pool
 from typing import Dict, List, Callable, Union
 
-from helpers import estimate_time_to_finish, send_notification, wrap_experiment
+from ruska.helpers import estimate_time_to_finish, send_notification
 
 
 class Ruska:
@@ -57,8 +57,6 @@ class Ruska:
 
         if is_logging:
             self.logging_path = os.path.splitext(self.save_path)[0] + '.log'
-            logging.basicConfig(filename=self.logging_path, level=logging.DEBUG)
-            logging.info(f'Writing logs to {self.logging_path}.')
 
     @property
     def start_time(self):
@@ -85,32 +83,35 @@ class Ruska:
         self._combine_ranges()
         results = []
 
-        wrapped_experiment = wrap_experiment(experiment)
         # overwrite config with range when specified
         configs = [
             {**self.config, **range_config} for range_config in self.range_combinations
         ]
-        logging.debug(f'Generated configs \n {configs}')
+        logger = logging.getLogger(__name__)
+        logger.debug(f'Generated configs \n {configs}')
 
         self.times.append(datetime.datetime.now())
 
         send_notification(
-            f"I start an experiment called {self.name}.", self.chat_id, self.token
+            f"Ruska starts an experiment called {self.name}.", self.chat_id, self.token
         )
+
         if parallel:
             pool = Pool(workers)
-            results = pool.map(wrapped_experiment, configs)
+            results = pool.starmap(experiment, enumerate(configs))
             pool.close()
             self.times.append(datetime.datetime.now())
         else:
-            for config in configs:
+            for i, config in enumerate(configs):
                 try:
-                    result = wrapped_experiment(config)
+                    result = experiment(i, config)
                 except Exception as e:
                     result = e
                 results.append(result)
                 self.times.append(datetime.datetime.now())
                 print(estimate_time_to_finish(self.times, len(self.range_combinations)))
+
+        logger.info(f'Finished {len(configs)} measurements.')
 
         config_store = {
             k: v for k, v in vars(self).items() if k not in ["range_combinations", "token", "chat_id"]
@@ -133,6 +134,7 @@ class Ruska:
             self.chat_id,
             self.token,
         )
+        logger.info(f'Wrote results to {self.save_path}. Stopping.')
 
     @staticmethod
     def load_result(path_to_result: str):
